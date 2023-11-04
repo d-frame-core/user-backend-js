@@ -138,11 +138,7 @@ router.patch('/api/kyc1/:publicAddress', verifyToken, updateKYC1Details);
 router.patch('/api/kyc2/:publicAddress', verifyToken, updateKYC2Details);
 
 // PATCH /api/permissions/:publicAddress
-router.patch(
-  '/api/permissions/:publicAddress',
-  verifyToken,
-  updatePermissionsFunction
-);
+router.patch('/api/permissions/:publicAddress', updatePermissionsFunction);
 
 // Define the route
 router.patch(
@@ -441,6 +437,39 @@ router.post(
 router.post('/api/add-tag/:publicAddress', verifyToken, addUserTag);
 
 router.delete('/api/delete-tag/:publicAddress', verifyToken, deleteUserTag);
+router.post('/dummy/ad/:publicAddress', async (req, res) => {
+  const { publicAddress } = req.params;
+  const adId = '652d5d9bea70db2e89fa13bf'; // Replace this with the actual ad ID
 
+  try {
+    const today = new Date().toLocaleDateString('en-GB');
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if an entry for today exists, create one if not
+    const todayAds = user.userAds.find((ad) => ad.date === today);
+
+    if (!todayAds) {
+      user.userAds.push({ date: today, ads: [] });
+    }
+
+    // Find today's entry and push the new ad with the given ID
+    const todayAdsIndex = user.userAds.findIndex((ad) => ad.date === today);
+    user.userAds[todayAdsIndex].ads.push({
+      adsId: adId,
+      rewards: 0, // You can set the rewards as needed
+      status: 'UNSEEN',
+    });
+
+    await user.save();
+
+    res.status(200).json({ message: 'Ad added successfully for today' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 const UserRouter = router;
 module.exports = { UserRouter };

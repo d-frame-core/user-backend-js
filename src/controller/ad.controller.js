@@ -26,25 +26,31 @@ async function updateAdStatus(req, res) {
     // Check if the ad status is 'UNSEEN' and update it to 'SEEN'
     if (adToUpdate.status.toUpperCase() === 'UNSEEN') {
       adToUpdate.status = 'SEEN';
+
       const today = new Date().toLocaleDateString('en-GB');
       user.rewards = user.rewards || {};
-      // Check if daily rewards for today exist, otherwise create it
-      if (!user.rewards.daily || user.rewards.daily.date !== today) {
-        user.rewards.daily = {
+      user.rewards.daily = user.rewards.daily || [];
+      const dailyRewards = user.rewards.daily;
+
+      if (
+        dailyRewards.length === 0 ||
+        !dailyRewards.some((reward) => reward.date === today)
+      ) {
+        user.rewards.daily.push({
           date: today,
           status: 'unpaid',
           browserData: [],
           ad: [],
           survey: [],
           referral: [],
-        };
+        });
       }
 
       // Generate new refId for each category
       const newRefId = new mongoose.Types.ObjectId();
 
       // Push new object with a new refId for each category
-      user.rewards.daily.ad.push({
+      user.rewards.daily[user.rewards.daily.length - 1].ad.push({
         refId: newRefId,
         rewards: 1,
         timestamp: new Date().toISOString(),

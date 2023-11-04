@@ -71,6 +71,35 @@ async function deleteUserByPublicAddress(req, res) {
   }
 }
 
+// async function getLatestAd(req, res) {
+//   const publicAddress = req.params.publicAddress;
+
+//   try {
+//     const user = await DFrameUser.findOne({ publicAddress });
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const latestAd = user.userAds[0].ads
+//       .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
+//       .reduce((latest, ad) => {
+//         if (latest === null || ad.date > latest.date) {
+//           return ad;
+//         }
+//         return latest;
+//       }, null);
+
+//     if (latestAd) {
+//       return res.status(200).json({ latestAdId: latestAd.adsId });
+//     } else {
+//       return res.status(404).json({ message: 'No unseen ads found' });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: 'Internal Server Error' });
+//   }
+// }
 async function getLatestAd(req, res) {
   const publicAddress = req.params.publicAddress;
 
@@ -81,19 +110,23 @@ async function getLatestAd(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const latestAd = user.userAds[0].ads
-      .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
+    const today = new Date().toLocaleDateString('en-GB');
+    const latestAd = user.userAds
+      .filter((ad) => ad.date === today) // Filter ads for today's date
+      .map((ad) => ad.ads.filter((ad) => ad.status.toUpperCase() === 'UNSEEN')) // Filter 'UNSEEN' ads for today
+      .flat()
       .reduce((latest, ad) => {
-        if (latest === null || ad.date > latest.date) {
+        if (!latest || new Date(ad.date) > new Date(latest.date)) {
           return ad;
         }
         return latest;
       }, null);
 
     if (latestAd) {
+      console.log('GET LATEST AD CALLED');
       return res.status(200).json({ latestAdId: latestAd.adsId });
     } else {
-      return res.status(404).json({ message: 'No unseen ads found' });
+      return res.status(404).json({ message: 'No unseen ads found for today' });
     }
   } catch (error) {
     console.error(error);
