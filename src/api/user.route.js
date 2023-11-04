@@ -24,6 +24,8 @@ const {
   updateWebsites,
   getTop3URLsForPast7Days,
   getTopVisitedSitesForPast7Days,
+  addUserTag,
+  deleteUserTag,
 } = require('../controller/user.controller');
 const {
   updateKYC1Details,
@@ -435,6 +437,10 @@ router.post(
   '/api/update-websites/:publicAddress',
   getTopVisitedSitesForPast7Days
 );
+
+router.post('/api/add-tag/:publicAddress', verifyToken, addUserTag);
+
+router.delete('/api/delete-tag/:publicAddress', verifyToken, deleteUserTag);
 
 const UserRouter = router;
 module.exports = { UserRouter };

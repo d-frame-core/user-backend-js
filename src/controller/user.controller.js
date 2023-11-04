@@ -295,6 +295,64 @@ async function getTopVisitedSitesForPast7Days(req, res) {
   }
 }
 
+async function addUserTag(req, res) {
+  const { publicAddress } = req.params;
+  const { tag } = req.body;
+
+  try {
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check the length of userTags array
+    if (user.tags.userTags.length >= 5) {
+      return res.status(400).json({
+        error: 'UserTags array is already at maximum length (5 or more)',
+      });
+    }
+
+    // Push the new tag into userTags array
+    user.tags.userTags.push(tag);
+
+    // Save the updated user
+
+    console.log('ADDED tag');
+    await user.save();
+
+    res.status(200).json({ message: 'Tag added successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function deleteUserTag(req, res) {
+  const { publicAddress } = req.params;
+  const { tag } = req.body;
+
+  try {
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const tagIndex = user.tags.userTags.indexOf(tag);
+
+    if (tagIndex === -1) {
+      return res.status(404).json({ error: 'Tag not found in userTags' });
+    }
+
+    user.tags.userTags.splice(tagIndex, 1);
+
+    await user.save();
+
+    res.status(200).json({ message: 'Tag deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 module.exports = {
   getUserByPublicAddress,
   deleteUserByPublicAddress,
@@ -303,4 +361,6 @@ module.exports = {
   uploadProfileImage,
   updateReferralCode,
   getTopVisitedSitesForPast7Days,
+  addUserTag,
+  deleteUserTag,
 };
