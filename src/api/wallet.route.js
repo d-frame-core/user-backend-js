@@ -271,9 +271,7 @@ const dframeABI = [
 router.get('/wallet-data/:publicAddress', async (req, res) => {
   try {
     const userWalletAddress = req.params.publicAddress;
-    const web3 = new Web3(
-      'https://polygon-mainnet.g.alchemy.com/v2/nHyM53VqfExPfPNYL5VLT1urCiUOunq_'
-    );
+    const web3 = new Web3(process.env.ALCHEMY_RPC);
 
     // Function to fetch past transactions
     const getPastTransactions = async (_walletAddress) => {
