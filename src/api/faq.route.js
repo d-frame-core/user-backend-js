@@ -2,9 +2,10 @@
 
 const express = require('express');
 const { Faq } = require('../models/faq.model');
+const verifyToken = require('../middleware/middleware');
 const router = express.Router();
 
-router.get('/api/faq/getall', async (req, res) => {
+router.get('/api/faq/getall', verifyToken, async (req, res) => {
   try {
     const faq = await Faq.find({});
     res.status(200).json(faq);
