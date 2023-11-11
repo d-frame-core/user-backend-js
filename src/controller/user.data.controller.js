@@ -204,10 +204,246 @@ async function getUserDataByTags(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+async function storeBrowserData(req, res) {
+  const { publicAddress } = req.params;
+  const dataEntries = req.body.tabData; // Array of data entries
+
+  console.log('User data stored in database is', dataEntries);
+
+  try {
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Define currentDate in localeDateString('en-GB') format
+    const currentDate = new Date().toLocaleDateString('en-GB');
+
+    // Iterate through the array of data entries
+    // if (user.permissions.storageOption == 'GCP') {
+    console.log('GCP ENTERED');
+    if (dataEntries.length < 1) {
+      return res.status(200).send('No data entries found');
+    }
+    for (const entry of dataEntries) {
+      const { urlLink, properties } = entry;
+      const { timeStamp, time_on_site } = properties;
+
+      // Convert the received timestamp to localeTimeString('en-GB')
+      const localeTimeString = new Date(timeStamp).toLocaleTimeString('en-GB');
+
+      // Convert time_spent to a number
+      const parsedTimeSpent = parseFloat(time_on_site);
+
+      // Check if the user already has userData for the currentDate
+      const existingUserData = user.userData.find(
+        (data) => data.dataDate === currentDate
+      );
+
+      if (existingUserData) {
+        // If data for the same date exists, update it
+        const existingUrlData = existingUserData.urlData.find(
+          (urlData) => urlData.urlLink === urlLink
+        );
+
+        if (existingUrlData) {
+          // Website already exists, so just push new timestamp and time_spent
+          if (!existingUrlData.timestamps.includes(localeTimeString)) {
+            existingUrlData.timestamps.push(localeTimeString);
+            existingUrlData.timespent.push(parsedTimeSpent);
+          }
+        } else {
+          // Website doesn't exist yet, so add a new entry with static tags
+          existingUserData.urlData.push({
+            urlLink: urlLink,
+            timestamps: [localeTimeString],
+
+            timespent: [parsedTimeSpent],
+          });
+        }
+      } else {
+        // Add a new entry for the currentDate with an empty timespent array and static tags
+        user.userData.push({
+          dataDate: currentDate,
+          urlData: [
+            {
+              urlLink: urlLink,
+              timestamps: [localeTimeString],
+
+              timespent: [parsedTimeSpent],
+            },
+          ],
+        });
+      }
+
+      const website = await WebsiteData.findOne({ website: urlLink });
+      if (website) {
+        // Website exists, update visitor count and user ID
+        website.visitorCounts++;
+        if (!website.userId.includes(user._id)) {
+          website.userId.push(user._id);
+        }
+        await website.save();
+      } else {
+        // If the URL doesn't exist in the WebsiteData model, create a new entry
+        const newWebsite = new WebsiteData({
+          website: urlLink,
+          visitorCounts: 1,
+          userId: [user._id],
+        });
+        await newWebsite.save();
+      }
+    }
+
+    // } else {
+    //   console.log('ENTERED ELSE');
+    //   const key = crypto
+    //     .createHash('sha256')
+    //     .update(req.params.publicAddress)
+    //     .digest();
+    //   console.log('reached key', key);
+    //   const cipher = crypto.createCipheriv('aes-256-cbc', key, IV);
+    //   console.log('reached cipher', cipher);
+    //   const preDataBuffer = Buffer.from(JSON.stringify(dataEntries));
+    //   console.log('preDataBuffer', preDataBuffer);
+    //   let encryptedData = cipher.update(preDataBuffer, 'utf8', 'base64');
+    //   encryptedData += cipher.final('base64');
+    //   console.log(encryptedData);
+    //   const dataBuffer = Buffer.from(JSON.stringify(encryptedData));
+    //   console.log('dataBuffer', dataBuffer);
+    //   const result = await ipfs.files.add(dataBuffer);
+    //   const hash = result[0].hash;
+    //   console.log(hash);
+    //   user.cid.push(hash);
+    // }
+
+    // const today = new Date().toLocaleDateString('en-GB');
+    // user.rewards = user.rewards || {};
+    // // Check if daily rewards for today exist, otherwise create it
+    // if (!user.rewards.daily || user.rewards.daily.date !== today) {
+    //   user.rewards.daily = {
+    //     date: today,
+    //     status: 'unpaid',
+    //     browserData: [],
+    //   };
+    // }
+
+    // // Add reward for browserData
+    // user.rewards.daily.browserData.push({
+    //   rewards: 1,
+    //   timestamp: new Date().toISOString(), // Set timestamp to current time
+
+    // });
+
+    // const today = new Date().toLocaleDateString('en-GB');
+    // user.rewards = user.rewards || {};
+    // // Check if daily rewards for today exist, otherwise create it
+    // if (!user.rewards.daily || user.rewards.daily.date !== today) {
+    //   user.rewards.daily = {
+    //     date: today,
+    //     status: 'unpaid',
+    //     browserData: {
+    //       refId: new mongoose.Types.ObjectId(), // Generate a random ObjectId for browserData
+    //       rewards: [],
+    //       timestamp: [],
+    //     },
+    //     ad: {
+    //       refId: new mongoose.Types.ObjectId(), // Generate a random ObjectId for ad
+    //       rewards: [],
+    //       timestamp: [],
+    //     },
+    //     survey: {
+    //       refId: new mongoose.Types.ObjectId(), // Generate a random ObjectId for survey
+    //       rewards: [],
+    //       timestamp: [],
+    //     },
+    //     referral: {
+    //       refId: new mongoose.Types.ObjectId(), // Generate a random ObjectId for referral
+    //       rewards: [],
+    //       timestamp: [],
+    //     },
+    //   };
+    // }
+
+    // Add reward for browserData
+    // user.rewards.daily.browserData.rewards.push(1);
+    // user.rewards.daily.browserData.timestamp.push(new Date().toISOString());
+
+    const today = new Date().toLocaleDateString('en-GB');
+    user.rewards = user.rewards || {};
+    user.rewards.daily = user.rewards.daily || [];
+    const dailyRewards = user.rewards.daily;
+
+    if (
+      dailyRewards.length === 0 ||
+      !dailyRewards.some((reward) => reward.date === today)
+    ) {
+      user.rewards.daily.push({
+        date: today,
+        status: 'unpaid',
+        browserData: [],
+        ad: [],
+        survey: [],
+        referral: [],
+      });
+    }
+
+    // Generate new refId for each category
+    const newRefId = new mongoose.Types.ObjectId();
+
+    // Push new object with a new refId for each category
+    user.rewards.daily[user.rewards.daily.length - 1].browserData.push({
+      refId: newRefId,
+      rewards: 1,
+      timestamp: new Date().toISOString(),
+    });
+    await user.save();
+    console.log('/api/user-data/:publicAddress POST CALLED SUCCESFULLY');
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error adding user data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// function encryptData(data, encryptionKey) {
+//   const cipher = crypto.createCipheriv('aes-256-cbc', encryptionKey);
+//   let encrypted = cipher.update(data, 'utf8', 'hex');
+//   encrypted += cipher.final('hex');
+//   return encrypted;
+// }
+
+// function decryptData(encryptedData, encryptionKey) {
+//   const encryptedBuffer = Buffer.from(encryptedData, 'base64'); // Convert base64 data to a buffer
+//   const decipher = crypto.createDecipheriv('aes-256-cbc', encryptionKey, IV);
+//   let decrypted = decipher.update(encryptedBuffer, 'base64', 'utf8'); // Use 'utf8' encoding for both input and output
+//   decrypted += decipher.final('utf8');
+//   return decrypted;
+// }
+
+// async function fetchIPFSData(cid) {
+//   try {
+//     console.log('FETCHING IPFS DATA');
+//     const result = await ipfs.files.get(cid);
+//     console.log('RESULT:', result);
+//     if (result.length > 0) {
+//       const data = result[0].content.toString();
+//       console.log('DATA of result ', data);
+//       return data;
+//     }
+//     return null;
+//   } catch (error) {
+//     console.error('Error fetching data from IPFS:', error);
+//     return null;
+//   }
+// }
 module.exports = {
   getTopVisitedSites,
   getTopTimespentSites,
   deleteUserData,
   getUserData,
   getUserDataByTags,
+  storeBrowserData,
 };
