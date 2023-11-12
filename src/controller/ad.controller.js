@@ -16,17 +16,23 @@ async function updateAdStatus(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Find the ad with the specified adId in the userAds
-    const adToUpdate = user.userAds[0].ads.find((ad) => ad.adsId === adId);
+    let adToUpdate;
+    for (const userAd of user.userAds) {
+      adToUpdate = userAd.ads.find((ad) => ad.adsId === adId);
+      if (adToUpdate) {
+        break; // Break the loop if the ad is found
+      }
+    }
 
     if (!adToUpdate) {
+      console.log('Ad not found for the user');
       return res.status(404).json({ message: 'Ad not found for the user' });
     }
 
     // Check if the ad status is 'UNSEEN' and update it to 'SEEN'
     if (adToUpdate.status.toUpperCase() === 'UNSEEN') {
       adToUpdate.status = 'SEEN';
-
+      console.log('ENTERED AD UPDATE STATUS');
       const today = new Date().toLocaleDateString('en-GB');
       user.rewards = user.rewards || {};
       user.rewards.daily = user.rewards.daily || [];
@@ -62,10 +68,11 @@ async function updateAdStatus(req, res) {
 
       return res.status(200).json({ message: 'Ad status updated to SEEN' });
     } else {
+      console.log('Ad status is not UNSEEN');
       return res.status(400).json({ message: 'Ad status is not UNSEEN' });
     }
   } catch (error) {
-    console.error(error);
+    console.error(error.message);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 }

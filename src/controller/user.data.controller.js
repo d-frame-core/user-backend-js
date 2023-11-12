@@ -4,6 +4,7 @@ const { DFrameUser } = require('../models/user.model'); // Replace with the corr
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const { WebsiteData } = require('../models/websites.model');
 
 async function getTopVisitedSites(req, res) {
   const { publicAddress } = req.params;
