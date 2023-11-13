@@ -383,7 +383,7 @@ async function storeBrowserData(req, res) {
     ) {
       user.rewards.daily.push({
         date: today,
-        status: 'unpaid',
+        status: 'UNPAID',
         browserData: [],
         ad: [],
         survey: [],
