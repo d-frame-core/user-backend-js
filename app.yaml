@@ -1,11 +1,12 @@
 # @format
 
-runtime: nodejs16
+runtime: nodejs18
 
 env_variables:
   POLYGON_RPC_URL: 'polygon.rpc.thirdweb.com'
   POLYGON_CHAIN_ID: '137'
   MONGOSTRING: 'mongodb+srv://dframe_admin:ONWbUyM5ADDBxAE5@cluster0.jcsev3b.mongodb.net/Ad-Campaign'
-  JWT_SECRET: 'dframe@s3cr3t!#'
+  JWT_SECRET: 'user'
   PORT: 8080
   GCP_PROJECTID: 'user-backend-402016'
+  ALCHEMY_RPC: 'https://polygon-mainnet.g.alchemy.com/v2/nHyM53VqfExPfPNYL5VLT1urCiUOunq_'
