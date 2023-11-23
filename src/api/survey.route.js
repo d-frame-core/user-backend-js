@@ -99,7 +99,7 @@ router.post('/api/update-survey/:surveyID', verifyToken, async (req, res) => {
     ) {
       user.rewards.daily.push({
         date: today,
-        status: 'UNPAID',
+        status: 'unpaid',
         browserData: [],
         ad: [],
         survey: [],
@@ -196,49 +196,6 @@ router.post(
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Internal Server Error' });
-    }
-  }
-);
-
-router.get(
-  '/api/rewards-data/:publicAddress',
-  verifyToken,
-  async (req, res) => {
-    const publicAddress = req.params.publicAddress;
-
-    try {
-      const user = await DFrameUser.findOne({ publicAddress });
-
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      const dailyRewards = user.rewards.daily || [];
-
-      if (dailyRewards.length === 0) {
-        return res.json({ surveyCount: 0, totalRewards: 0 });
-      }
-
-      let totalSurveyCount = 0;
-      let totalRewards = 0;
-
-      // Iterate through each entry in the daily array
-      dailyRewards.forEach((entry) => {
-        const surveyArray = entry.survey || [];
-        totalSurveyCount += surveyArray.length;
-
-        // Calculate the sum of rewards in the survey array for each entry
-        const entryTotalRewards = surveyArray.reduce(
-          (sum, surveyEntry) => sum + surveyEntry.rewards,
-          0
-        );
-        totalRewards += entryTotalRewards;
-      });
-
-      res.json({ surveyCount: totalSurveyCount, totalRewards });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 );

@@ -71,35 +71,6 @@ async function deleteUserByPublicAddress(req, res) {
   }
 }
 
-// async function getLatestAd(req, res) {
-//   const publicAddress = req.params.publicAddress;
-
-//   try {
-//     const user = await DFrameUser.findOne({ publicAddress });
-
-//     if (!user) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     const latestAd = user.userAds[0].ads
-//       .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
-//       .reduce((latest, ad) => {
-//         if (latest === null || ad.date > latest.date) {
-//           return ad;
-//         }
-//         return latest;
-//       }, null);
-
-//     if (latestAd) {
-//       return res.status(200).json({ latestAdId: latestAd.adsId });
-//     } else {
-//       return res.status(404).json({ message: 'No unseen ads found' });
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: 'Internal Server Error' });
-//   }
-// }
 async function getLatestAd(req, res) {
   const publicAddress = req.params.publicAddress;
 
@@ -110,23 +81,19 @@ async function getLatestAd(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const today = new Date().toLocaleDateString('en-GB');
-    const latestAd = user.userAds
-      .filter((ad) => ad.date === today) // Filter ads for today's date
-      .map((ad) => ad.ads.filter((ad) => ad.status.toUpperCase() === 'UNSEEN')) // Filter 'UNSEEN' ads for today
-      .flat()
+    const latestAd = user.userAds[0].ads
+      .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
       .reduce((latest, ad) => {
-        if (!latest || new Date(ad.date) > new Date(latest.date)) {
+        if (latest === null || ad.date > latest.date) {
           return ad;
         }
         return latest;
       }, null);
 
     if (latestAd) {
-      console.log('GET LATEST AD CALLED');
       return res.status(200).json({ latestAdId: latestAd.adsId });
     } else {
-      return res.status(404).json({ message: 'No unseen ads found for today' });
+      return res.status(404).json({ message: 'No unseen ads found' });
     }
   } catch (error) {
     console.error(error);
@@ -328,64 +295,6 @@ async function getTopVisitedSitesForPast7Days(req, res) {
   }
 }
 
-async function addUserTag(req, res) {
-  const { publicAddress } = req.params;
-  const { tag } = req.body;
-
-  try {
-    const user = await DFrameUser.findOne({ publicAddress });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Check the length of userTags array
-    if (user.tags.userTags.length >= 5) {
-      return res.status(400).json({
-        error: 'UserTags array is already at maximum length (5 or more)',
-      });
-    }
-
-    // Push the new tag into userTags array
-    user.tags.userTags.push(tag);
-
-    // Save the updated user
-
-    console.log('ADDED tag');
-    await user.save();
-
-    res.status(200).json({ message: 'Tag added successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
-async function deleteUserTag(req, res) {
-  const { publicAddress } = req.params;
-  const { tag } = req.body;
-
-  try {
-    const user = await DFrameUser.findOne({ publicAddress });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const tagIndex = user.tags.userTags.indexOf(tag);
-
-    if (tagIndex === -1) {
-      return res.status(404).json({ error: 'Tag not found in userTags' });
-    }
-
-    user.tags.userTags.splice(tagIndex, 1);
-
-    await user.save();
-
-    res.status(200).json({ message: 'Tag deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
 module.exports = {
   getUserByPublicAddress,
   deleteUserByPublicAddress,
@@ -394,6 +303,4 @@ module.exports = {
   uploadProfileImage,
   updateReferralCode,
   getTopVisitedSitesForPast7Days,
-  addUserTag,
-  deleteUserTag,
 };

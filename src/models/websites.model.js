@@ -8,10 +8,12 @@ const websiteDataSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    tags: {
-      type: [String],
-      default: [],
-    },
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     visitorCounts: {
       type: Number,
       default: 0,
@@ -27,7 +29,7 @@ const websiteDataSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: 'UNTAGGED',
+      default: 'UNTAGGED', //untagged , Taggable , Tagged,
     },
   },
   {
