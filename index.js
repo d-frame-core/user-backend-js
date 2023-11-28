@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 const start = async () => {
   try {
     await mongoose
-      .connect(`${process.env.MONGOSTRING}`, {
+      .connect(`${process.env.CONNECTIONSTRING}`, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       })

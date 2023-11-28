@@ -11,7 +11,6 @@ const cors = require('cors');
 const SurveyRouter = require('./src/api/survey.route');
 const { DexRouter } = require('./src/api/dex.router.js');
 const { WalletRouter } = require('./src/api/wallet.route.js');
-const { DUMMYROUTER } = require('./src/api/dummy.route.js');
 const app = express();
 app.use(express.json({ limit: '500mb' }));
 
@@ -58,7 +57,6 @@ app.use('/ad', AdRouter);
 app.use('/survey', SurveyRouter);
 app.use('/dex', DexRouter);
 app.use('/wallet', WalletRouter);
-app.use('/dummy', DUMMYROUTER);
 app.use('/', (req, res) => {
   res.status(200).send('App is live');
 });
