@@ -4,7 +4,11 @@ const { DFrameUser } = require('../models/user.model'); // Replace with the corr
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const ipfsAPI = require('ipfs-api');
+const crypto = require('crypto');
 const { WebsiteData } = require('../models/websites.model');
+const ipfs = ipfsAPI('127.0.0.1', '5001');
+const IV = '5183666c72eec9e4';
 
 async function getTopVisitedSites(req, res) {
   const { publicAddress } = req.params;
@@ -132,6 +136,31 @@ async function deleteUserData(req, res) {
   }
 }
 
+function decryptData(encryptedData, encryptionKey) {
+  const encryptedBuffer = Buffer.from(encryptedData, 'base64'); // Convert base64 data to a buffer
+  const decipher = crypto.createDecipheriv('aes-256-cbc', encryptionKey, IV);
+  let decrypted = decipher.update(encryptedBuffer, 'base64', 'utf8'); // Use 'utf8' encoding for both input and output
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+async function fetchIPFSData(cid) {
+  try {
+    console.log('FETCHING IPFS DATA');
+    const result = await ipfs.files.get(cid);
+    console.log('RESULT:', result);
+    if (result.length > 0) {
+      const data = result[0].content.toString();
+      console.log('DATA of result ', data);
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching data from IPFS:', error);
+    return null;
+  }
+}
+
 async function getUserData(req, res) {
   const { publicAddress } = req.params;
 
@@ -143,24 +172,24 @@ async function getUserData(req, res) {
     }
 
     // Uncomment the section to handle additional data retrieval methods
-    // const gcpData = user.userData;
-    // let ipfsData = [];
-    // for (const cid of user.cid) {
-    //   console.log('ENTERED CID', cid);
-    //   const ipfsEncryptedData = await fetchIPFSData(cid);
-    //   if (ipfsEncryptedData) {
-    //     console.log('ENTERED IF', ipfsEncryptedData);
-    //     const key = crypto
-    //       .createHash('sha256')
-    //       .update(user.publicAddress)
-    //       .digest();
-    //     const decryptedData = decryptData(ipfsEncryptedData, key);
-    //     ipfsData.push(decryptedData); // Assuming data is JSON
-    //   }
-    // }
-    // const allUserData = { gcp: gcpData, ipfs: ipfsData };
+    const gcpData = user.userData;
+    let ipfsData = [];
+    for (const cid of user.cid) {
+      console.log('ENTERED CID', cid);
+      const ipfsEncryptedData = await fetchIPFSData(cid);
+      if (ipfsEncryptedData) {
+        console.log('ENTERED IF', ipfsEncryptedData);
+        const key = crypto
+          .createHash('sha256')
+          .update(user.publicAddress)
+          .digest();
+        const decryptedData = decryptData(ipfsEncryptedData, key);
+        ipfsData.push(decryptedData); // Assuming data is JSON
+      }
+    }
+    const allUserData = { gcp: gcpData, ipfs: ipfsData };
 
-    const allUserData = user.userData; // Currently returning only the user data
+    // const allUserData = user.userData; 
 
     console.log('/api/user-data/:publicAddress GET CALLED SUCCESSFULLY');
     res.status(200).json(allUserData);
@@ -169,6 +198,7 @@ async function getUserData(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
 async function getUserDataByTags(req, res) {
   const { publicAddress } = req.params;
   const { tags } = req.body;

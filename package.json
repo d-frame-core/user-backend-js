@@ -4,7 +4,7 @@
   "description": "User Dashboard Application",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "nodemon index.js"
   },
   "keywords": [
     "user",
@@ -25,6 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.2",
     "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.0.2",
     "web3": "^4.2.2"
   }
 }

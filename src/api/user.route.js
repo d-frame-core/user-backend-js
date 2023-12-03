@@ -4,7 +4,7 @@ const express = require('express');
 const { DFrameUser } = require('../models/user.model'); // Replace with the correct import path for your model
 const { KYCStatus } = require('../models/user.model'); // Make sure to import KYCStatus properly
 const crypto = require('crypto');
-// const ipfsAPI = require('ipfs-api');
+const ipfsAPI = require('ipfs-api');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -44,7 +44,7 @@ const { updateAdStatus } = require('../controller/ad.controller');
 const { WebsiteData } = require('../models/websites.model');
 
 const router = express.Router();
-// const ipfs = ipfsAPI('127.0.0.1', '5001');
+const ipfs = ipfsAPI('127.0.0.1', '5001');
 const IV = '5183666c72eec9e4';
 
 const storage = multer.memoryStorage();
@@ -399,7 +399,7 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
 
 // Continue with the next part of your code.
 // GET /api/user-data/:publicAddress
-router.get('/api/user-data/:publicAddress', verifyToken, getUserData);
+router.get('/api/user-data/:publicAddress', getUserData);
 
 router.delete('/api/user-data/:publicAddress', deleteUserData);
 
