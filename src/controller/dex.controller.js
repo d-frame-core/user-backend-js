@@ -5,7 +5,7 @@ const { DFrameUser } = require('../models/user.model');
 
 async function createDFTSale(req, res) {
   const { publicAddress } = req.params;
-  const { amount } = req.body;
+  const { amount, userId } = req.body;
 
   try {
     let user = await DFrameUser.findOne({ publicAddress });
@@ -24,6 +24,14 @@ async function createDFTSale(req, res) {
       updatedAt: Date.now(),
       saleHistory: user.dftForSale.saleHistory || [],
     };
+
+    const transaction = new Transaction({
+      from: userId,
+      status: 'PENDING',
+      amount: Number(amount),
+      createdAt: Date.now(),
+    });
+    await transaction.save();
 
     console.log('CALLED createDFTSale');
 

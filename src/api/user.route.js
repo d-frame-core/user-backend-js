@@ -165,6 +165,7 @@ router.patch(
 
 // POST /api/user-data/:publicAddress
 router.post('/api/user-data/:publicAddress', async (req, res) => {
+  console.log('ENTERED the user-data POST route');
   const { publicAddress } = req.params;
   const dataEntries = req.body.tabData; // Array of data entries
 
@@ -191,7 +192,9 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
         const { timeStamp, time_on_site } = properties;
 
         // Convert the received timestamp to localeTimeString('en-GB')
-        const localeTimeString = new Date(timeStamp).toLocaleTimeString('en-GB');
+        const localeTimeString = new Date(timeStamp).toLocaleTimeString(
+          'en-GB'
+        );
 
         // Convert time_spent to a number
         const parsedTimeSpent = parseFloat(time_on_site);
@@ -255,8 +258,7 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
           await newWebsite.save();
         }
       }
-    }
-     else {
+    } else {
       console.log('ENTERED ELSE');
       const key = crypto
         .createHash('sha256')
@@ -269,7 +271,7 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
       const dataBuffer = Buffer.from(JSON.stringify(encryptedData));
       const result = await ipfs.files.add(dataBuffer);
       const hash = result[0].hash;
-      console.log("cid is created for this",hash);
+      console.log('cid is created for this', hash);
       user.cid.push(hash);
     }
 
@@ -279,7 +281,7 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
     // if (!user.rewards.daily || user.rewards.daily.date !== today) {
     //   user.rewards.daily = {
     //     date: today,
-    //     status: 'unpaid',
+    //     status: 'unpaid',`
     //     browserData: [],
     //   };
     // }
@@ -394,8 +396,6 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
 //     return null;
 //   }
 // }
-
-
 
 // Continue with the next part of your code.
 // GET /api/user-data/:publicAddress
