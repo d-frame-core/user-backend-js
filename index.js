@@ -7,10 +7,13 @@ const PORT = process.env.PORT || 8080;
 const start = async () => {
   try {
     await mongoose
-      .connect(`${process.env.CONNECTIONSTRING}`, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      })
+      .connect(
+        'mongodb+srv://dframe_admin:ONWbUyM5ADDBxAE5@cluster0.jcsev3b.mongodb.net/Ad-Campaign',
+        {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+        }
+      )
       .then(() => {
         console.log('Connected to database');
       });

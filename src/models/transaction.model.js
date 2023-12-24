@@ -11,7 +11,6 @@ const transactionSchema = new mongoose.Schema({
   to: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User', // Reference to User model
-    required: true,
   },
   createdAt: {
     type: Date,
@@ -27,8 +26,8 @@ const transactionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'under review', 'cancelled'],
-    default: 'pending',
+    enum: ['PENDING', 'COMPLETED', 'UNDERREVIEW', 'CANCELLED'],
+    default: 'PENDING',
   },
 });
 
