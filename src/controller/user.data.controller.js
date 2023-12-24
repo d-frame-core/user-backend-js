@@ -189,13 +189,120 @@ async function getUserData(req, res) {
     }
     const allUserData = { gcp: gcpData, ipfs: ipfsData };
 
-    // const allUserData = user.userData; 
+    // const allUserData = user.userData;
 
     console.log('/api/user-data/:publicAddress GET CALLED SUCCESSFULLY');
     res.status(200).json(allUserData);
   } catch (error) {
     console.error('Error retrieving user data:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function getIPFSDataFromCID(req, res) {
+  const cid = req.params.cid;
+  const publicAddress = req.params.publicAddress;
+  const user = await DFrameUser.findOne({ publicAddress });
+  console.log('ENTERED CID', cid);
+  try {
+    const ipfsEncryptedData = await fetchIPFSData(cid);
+    if (ipfsEncryptedData) {
+      console.log('ENTERED IF', ipfsEncryptedData);
+      const key = crypto
+        .createHash('sha256')
+        .update(user.publicAddress)
+        .digest();
+      const decryptedData = decryptData(ipfsEncryptedData, key);
+      console.log('DECRYPTED DATA', decryptedData);
+      res.status(200).send(decryptedData);
+    } else {
+      res.status(404).send({ message: 'No data found' });
+    }
+  } catch (error) {}
+}
+const getUserDataForPast3Dates = async (req, res) => {
+  const { publicAddress } = req.params;
+  try {
+    // Assuming UserModel represents your user model
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return { message: 'User not found' };
+    }
+
+    const result = [];
+    for (let i = 0; i <= 2; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const formattedDate = date.toLocaleDateString('en-GB');
+
+      const userDataForDate = user.userData.find(
+        (data) => data.dataDate === formattedDate
+      );
+      if (userDataForDate) {
+        result.push({
+          dataDate: userDataForDate.dataDate,
+          urlData: userDataForDate.urlData,
+          cid: userDataForDate.cid,
+        });
+      } else {
+        result.push({
+          dataDate: formattedDate,
+          urlData: [],
+          cid: [],
+        });
+      }
+    }
+    console.log('/api/user-data/:publicAddress GET CALLED SUCCESSFULLY');
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return { message: 'Internal server error' };
+  }
+};
+
+async function getIPFSDataForDate(req, res) {
+  const { publicAddress } = req.params;
+  try {
+    const user = await DFrameUser.findOne({ publicAddress });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const currentDate = new Date().toLocaleDateString('en-GB');
+    const userDataForDate = user.userData.find(
+      (data) => data.dataDate === currentDate
+    );
+
+    if (!userDataForDate) {
+      return res
+        .status(404)
+        .json({ message: 'No data found for the current date' });
+    }
+
+    const decryptedDataArray = [];
+    for (const cid of userDataForDate.cid) {
+      const ipfsEncryptedData = await fetchIPFSData(cid);
+      if (ipfsEncryptedData) {
+        const key = crypto
+          .createHash('sha256')
+          .update(user.publicAddress)
+          .digest();
+        const decryptedData = decryptData(ipfsEncryptedData, key);
+        decryptedDataArray.push(decryptedData);
+      }
+    }
+
+    const result = {
+      dataDate: userDataForDate.dataDate,
+      urlData: userDataForDate.urlData,
+      cid: decryptedDataArray,
+    };
+    console.log('/api/user-data/:publicAddress GET CALLED SUCCESSFULLY');
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
@@ -476,5 +583,8 @@ module.exports = {
   deleteUserData,
   getUserData,
   getUserDataByTags,
+  getUserDataForPast3Dates,
   storeBrowserData,
+  getIPFSDataFromCID,
+  getIPFSDataForDate,
 };

@@ -36,6 +36,9 @@ const {
   deleteUserData,
   getUserData,
   getUserDataByTags,
+  getUserDataForPast3Dates,
+  getIPFSDataFromCID,
+  getIPFSDataForDate,
 } = require('../controller/user.data.controller');
 const {
   updatePermissionsFunction,
@@ -237,6 +240,9 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
                 timespent: [parsedTimeSpent],
               },
             ],
+            cid:
+              user.userData.find((data) => data.dataDate === currentDate).cid ||
+              [],
           });
         }
 
@@ -259,20 +265,66 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
         }
       }
     } else {
+      // console.log('ENTERED ELSE');
+      // const key = crypto
+      //   .createHash('sha256')
+      //   .update(req.params.publicAddress)
+      //   .digest();
+      // const cipher = crypto.createCipheriv('aes-256-cbc', key, IV);
+      // const preDataBuffer = Buffer.from(JSON.stringify(dataEntries));
+      // let encryptedData = cipher.update(preDataBuffer, 'utf8', 'base64');
+      // encryptedData += cipher.final('base64');
+      // const dataBuffer = Buffer.from(JSON.stringify(encryptedData));
+      // const result = await ipfs.files.add(dataBuffer);
+      // const hash = result[0].hash;
+      // console.log('cid is created for this', hash);
+      // user.cid.push(hash);
+
+      /**
+       * NEW SOLUTION
+       */
       console.log('ENTERED ELSE');
       const key = crypto
         .createHash('sha256')
         .update(req.params.publicAddress)
         .digest();
       const cipher = crypto.createCipheriv('aes-256-cbc', key, IV);
-      const preDataBuffer = Buffer.from(JSON.stringify(dataEntries));
+
+      // Initialize a new array to store website data
+      const modifiedDataArray = [];
+
+      // Applying time spent and timestamp conversion for each website
+      for (const entry of dataEntries) {
+        const { urlLink, properties } = entry;
+        const { timeStamp, time_on_site } = properties;
+        const localeTimeString = new Date(timeStamp).toLocaleTimeString(
+          'en-GB'
+        );
+        const parsedTimeSpent = parseFloat(time_on_site);
+        modifiedDataArray.push({ urlLink, localeTimeString, parsedTimeSpent });
+      }
+
+      const preDataBuffer = Buffer.from(JSON.stringify(modifiedDataArray));
       let encryptedData = cipher.update(preDataBuffer, 'utf8', 'base64');
       encryptedData += cipher.final('base64');
       const dataBuffer = Buffer.from(JSON.stringify(encryptedData));
       const result = await ipfs.files.add(dataBuffer);
       const hash = result[0].hash;
       console.log('cid is created for this', hash);
-      user.cid.push(hash);
+      const existingUserData = user.userData.find(
+        (data) => data.dataDate === currentDate
+      );
+      if (existingUserData) {
+        existingUserData.cid.push(hash);
+      } else {
+        user.userData.push({
+          dataDate: currentDate,
+          // urlData:
+          //   user.userData.find((data) => data.dataDate === currentDate)
+          //     .urlData || [],
+          cid: [hash],
+        });
+      }
     }
 
     // const today = new Date().toLocaleDateString('en-GB');
@@ -338,7 +390,7 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
     ) {
       user.rewards.daily.push({
         date: today,
-        status: 'unpaid',
+        status: 'UNPAID',
         browserData: [],
         ad: [],
         survey: [],
@@ -399,7 +451,9 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
 
 // Continue with the next part of your code.
 // GET /api/user-data/:publicAddress
-router.get('/api/user-data/:publicAddress', getUserData);
+router.get('/api/user-data/:publicAddress', getIPFSDataForDate);
+
+router.get('/api/user-data/cid/:publicAddress/:cid', getIPFSDataFromCID);
 
 router.delete('/api/user-data/:publicAddress', deleteUserData);
 

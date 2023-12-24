@@ -30,7 +30,7 @@ const rewardsEntryWithRefId = [
 const dFrameUserSchema = new mongoose.Schema(
   {
     publicAddress: { type: String, required: true, unique: true },
-    cid: [{ type: String }],
+
     referralCode: { type: String, default: '' },
     kyc1: {
       status: {
@@ -98,6 +98,7 @@ const dFrameUserSchema = new mongoose.Schema(
             timespent: [Number],
           },
         ],
+        cid: [{ type: String }],
       },
     ],
 
