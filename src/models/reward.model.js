@@ -1,3 +1,5 @@
+/** @format */
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -5,21 +7,21 @@ const Schema = mongoose.Schema;
 const rewardRequestSchema = new Schema({
   publicAddress: {
     type: String,
-    required: true
+    required: true,
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'failed'], // Customize as needed
-    required: true
+    enum: ['PENDING', 'COMPLETED', 'FAILED'], // Customize as needed
+    required: true,
   },
   DframeUserId: {
     type: String, // Assuming DframeUserId is a string, change as needed
-    required: true
-  }
+    required: true,
+  },
 });
 
 // Create the model
