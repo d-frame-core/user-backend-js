@@ -181,30 +181,65 @@ async function getRewardsForPublicAddress(req, res) {
     userOneTimeRewards += user.rewards.oneTime.kyc3.rewards;
   }
 
-  let userDailyRewards = 0;
+  // let userDailyRewards = 0;
+  // user.rewards.daily.forEach((dailyEntry) => {
+  //   if (dailyEntry.status === 'UNPAID') {
+  //     dailyEntry.browserData.forEach((entry) => {
+  //       userDailyRewards += entry.rewards;
+  //     });
+
+  //     dailyEntry.ad.forEach((entry) => {
+  //       userDailyRewards += entry.rewards;
+  //     });
+
+  //     dailyEntry.survey.forEach((entry) => {
+  //       userDailyRewards += entry.rewards;
+  //     });
+
+  //     dailyEntry.referral.forEach((entry) => {
+  //       userDailyRewards += entry.rewards;
+  //     });
+  //   }
+  // });
+  const currentDate = new Date();
+  const startingDate = new Date('2023-01-01').toLocaleDateString('en-GB'); // Replace with your actual starting date
+  const previousMonthDate = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    0
+  ).toLocaleDateString('en-GB');
+
+  console.log('previous month date', previousMonthDate);
+  console.log('starting date', startingDate);
+
+  let totalDailyRewards = 0;
+
+  // Iterate through daily rewards and calculate total rewards till previous month with matching date and status
   user.rewards.daily.forEach((dailyEntry) => {
-    if (dailyEntry.status === 'UNPAID') {
+    const entryDate = new Date(dailyEntry.date).toLocaleDateString('en-GB');
+
+    if (
+      entryDate >= startingDate &&
+      entryDate <= previousMonthDate &&
+      dailyEntry.status.toUpperCase() === 'UNPAID'
+    ) {
       dailyEntry.browserData.forEach((entry) => {
-        userDailyRewards += entry.rewards;
+        totalDailyRewards += entry.rewards;
       });
-
       dailyEntry.ad.forEach((entry) => {
-        userDailyRewards += entry.rewards;
+        totalDailyRewards += entry.rewards;
       });
-
       dailyEntry.survey.forEach((entry) => {
-        userDailyRewards += entry.rewards;
+        totalDailyRewards += entry.rewards;
       });
-
       dailyEntry.referral.forEach((entry) => {
-        userDailyRewards += entry.rewards;
+        totalDailyRewards += entry.rewards;
       });
     }
   });
-
   res.status(200).json({
     userOneTimeRewards,
-    userDailyRewards,
+    totalDailyRewards,
   });
 }
 
