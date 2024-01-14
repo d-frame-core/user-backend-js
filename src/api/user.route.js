@@ -36,9 +36,9 @@ const {
   deleteUserData,
   getUserData,
   getUserDataByTags,
-  getUserDataForPast3Dates,
   getIPFSDataFromCID,
   getIPFSDataForDate,
+  getSitesByTags,
 } = require('../controller/user.data.controller');
 const {
   updatePermissionsFunction,
@@ -47,7 +47,7 @@ const { updateAdStatus } = require('../controller/ad.controller');
 const { WebsiteData } = require('../models/websites.model');
 
 const router = express.Router();
-const ipfs = ipfsAPI('127.0.0.1', '5001');
+const ipfs = ipfsAPI('34.131.52.220', '8080');
 const IV = '5183666c72eec9e4';
 
 const storage = multer.memoryStorage();
@@ -186,7 +186,6 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
 
     // Iterate through the array of data entries
     if (user.permissions.storageOption == 'GCP') {
-      console.log('GCP ENTERED');
       if (dataEntries.length < 1) {
         return res.status(200).send('No data entries found');
       }
@@ -240,9 +239,6 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
                 timespent: [parsedTimeSpent],
               },
             ],
-            cid:
-              user.userData.find((data) => data.dataDate === currentDate).cid ||
-              [],
           });
         }
 
@@ -483,6 +479,7 @@ router.get(
   getUnseenSurveys
 );
 
+router.get('/api/user/st/:publicAddress', getSitesByTags);
 router.post(
   '/api/update-websites/:publicAddress',
   getTopVisitedSitesForPast7Days

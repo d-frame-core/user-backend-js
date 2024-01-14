@@ -577,6 +577,117 @@ async function storeBrowserData(req, res) {
 //     return null;
 //   }
 // }
+
+const getWebsitesForDistribution = async (req, res) => {
+  const publicAddress = req.params.publicAddress;
+
+  try {
+    // Find the user by public address
+    const user = await DFrameUser.findOne({ publicAddress });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get today's date and previous two days' dates in en-GB format
+    const currentDate = new Date().toLocaleDateString('en-GB');
+    const twoDaysAgo = new Date(
+      Date.now() - 2 * 24 * 60 * 60 * 1000
+    ).toLocaleDateString('en-GB');
+
+    // Extract websites visited for the past 3 days from userData
+    const websitesVisited = [];
+    for (const userDataEntry of user.userData) {
+      if (
+        userDataEntry.dataDate === currentDate ||
+        userDataEntry.dataDate === twoDaysAgo ||
+        userDataEntry.dataDate === new Date().toLocaleDateString('en-GB')
+      ) {
+        for (const urlData of userDataEntry.urlData) {
+          websitesVisited.push(urlData.urlLink);
+        }
+      }
+    }
+
+    // Remove duplicate websites and send the list in the response
+    const uniqueWebsitesVisited = Array.from(new Set(websitesVisited));
+    for (const website of uniqueWebsitesVisited) {
+      const websiteData = await WebsiteData.findOne({ website });
+
+      if (websiteData && websiteData.tags.length > 0) {
+        user.tags.dataTags = user.tags.dataTags.concat(websiteData.tags);
+      }
+    }
+
+    // Save updated user tags
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: 'Tags updated successfully', tags: user.tags.dataTags });
+  } catch (error) {
+    console.error('Error fetching websites:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getSitesByTags = async (req, res) => {
+  const publicAddress = req.params.publicAddress;
+  console.log('entered get sites');
+  try {
+    // Find the user by public address and populate dataTags
+    const user = await DFrameUser.findOne({ publicAddress }).populate(
+      'tags.dataTags'
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const dataTags = user.tags.dataTags.map((tag) => tag.name); // Extract tag names from dataTags
+
+    const currentDate = new Date().toLocaleDateString('en-GB'); // Get current date
+
+    // Fetch websites associated with each tag and compare with userData for current date
+    const relevantWebsitesByTag = {};
+    for (const tagName of dataTags) {
+      // Assuming 'dataTags' is an array of tag names from the previous step
+
+      // Fetch websites for each tag from the Tag model
+      const tag = await Tag.findOne({ name: tagName }).populate(
+        'websites',
+        'website'
+      );
+
+      if (tag) {
+        const websiteNames = tag.websites.map((website) => website.website); // Get website names
+        const matchedUrlData = [];
+
+        // Compare website names with userData urlData for the current date
+        for (const websiteName of websiteNames) {
+          for (const userData of user.userData) {
+            if (userData.dataDate === currentDate) {
+              for (const urlData of userData.urlData) {
+                if (urlData.urlLink === websiteName) {
+                  matchedUrlData.push(urlData);
+                }
+              }
+            }
+          }
+        }
+
+        if (matchedUrlData.length > 0) {
+          relevantWebsitesByTag[tagName] = matchedUrlData;
+        }
+      }
+    }
+
+    res.status(200).json({ relevantWebsitesByTag });
+  } catch (error) {
+    console.error('Error fetching sites by tags (Step 2):', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getTopVisitedSites,
   getTopTimespentSites,
@@ -587,4 +698,6 @@ module.exports = {
   storeBrowserData,
   getIPFSDataFromCID,
   getIPFSDataForDate,
+  getWebsitesForDistribution,
+  getSitesByTags,
 };

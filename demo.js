@@ -1,7 +1,9 @@
+/** @format */
+
 const ipfsAPI = require('ipfs-api');
 const fs = require('fs');
 
-const ipfs = ipfsAPI('127.0.0.1', '5001'); // Adjust the host and port if needed
+const ipfs = ipfsAPI('34.131.52.220', '5001'); // Adjust the host and port if needed
 
 const message = 'Hello there!';
 
