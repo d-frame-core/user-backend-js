@@ -308,35 +308,54 @@ async function getIPFSDataForDate(req, res) {
 
 async function getUserDataByTags(req, res) {
   const { publicAddress } = req.params;
-  const { tags } = req.body;
-
   try {
     const user = await DFrameUser.findOne({ publicAddress });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Aggregate to get unique websites visited in the last 7 days
+    const websiteArray = await User.aggregate([
+      {
+        $match: {
+          'userData.dataDate': { $gte: sevenDaysAgo.toISOString() },
+        },
+      },
+      {
+        $unwind: '$userData',
+      },
+      {
+        $unwind: '$userData.urlData',
+      },
+      {
+        $match: {
+          'userData.urlData.timestamps': { $gte: sevenDaysAgo.toISOString() },
+        },
+      },
+      {
+        $group: {
+          _id: '$userData.urlData.urlLink',
+        },
+      },
+    ]);
     // Create an array to store matching websites
     const matchingWebsites = [];
-
     // Iterate through the user's data to find websites with matching tags
-    user.userData.forEach((data) => {
-      if (data.urlData) {
-        data.urlData.forEach((urlData) => {
-          const urlLink = urlData.urlLink.trim();
-          const urlTags = urlData.tags;
-
-          // Check if any of the tags match the provided tags
-          if (tags.some((tag) => urlTags.includes(tag))) {
-            matchingWebsites.push({ urlLink, tags: urlTags });
-          }
-        });
-      }
+    const tags=user.tags.dataTags;
+    if(!tags){
+      res.status(500).json({ error: 'no data' });
+    }
+    const filteredTags = await Tag.find({ name: { $in: tags } }).populate({
+      path: 'websites',
+      select: 'name count', // Include 'name' and 'count' fields of the populated websites
+      match: { _id: { $in: websiteArray } }, // Filter based on the specified website IDs
     });
 
     console.log('/api/user-data/tags/:publicAddress GET CALLED SUCCESSFULLY');
-    res.status(200).json(matchingWebsites);
+    res.status(200).json(filteredTags);
   } catch (error) {
     console.error('Error retrieving matching websites by tags:', error);
     res.status(500).json({ error: 'Internal server error' });
