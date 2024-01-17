@@ -6,6 +6,9 @@
   "scripts": {
     "start": "nodemon index.js"
   },
+  "config": {
+    "gitProtocol": "https"
+  },
   "keywords": [
     "user",
     "dashboard",
