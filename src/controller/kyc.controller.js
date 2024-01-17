@@ -44,7 +44,7 @@ async function updateKYC1Details(req, res) {
       refId: new mongoose.Types.ObjectId(),
       rewards: 1,
       date: new Date().toLocaleDateString('en-GB'),
-      status: 'unpaid',
+      status: 'UNPAID',
       timestamp: new Date(),
     };
     user.rewards.oneTime.kyc1 = kyc1Reward;
@@ -104,7 +104,7 @@ async function updateKYC2Details(req, res) {
       refId: new mongoose.Types.ObjectId(),
       rewards: 1,
       date: new Date().toLocaleDateString('en-GB'),
-      status: 'unpaid',
+      status: 'UNPAID',
       timestamp: new Date(),
     };
     user.rewards.oneTime.kyc2 = kyc2Reward;
@@ -167,7 +167,7 @@ async function uploadKYC3Images(req, res) {
               refId: new mongoose.Types.ObjectId(),
               rewards: 1,
               date: new Date().toLocaleDateString('en-GB'),
-              status: 'unpaid',
+              status: 'UNPAID',
               timestamp: new Date(),
             };
             user.rewards.oneTime.kyc3 = kyc3Reward;

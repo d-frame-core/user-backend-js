@@ -29,7 +29,10 @@ router.post('/api/update-survey/:surveyID', verifyToken, async (req, res) => {
     const surveyID = req.params.surveyID;
     const { userId, options, publicAddress } = req.body;
 
-    const survey = await Survey.findById(surveyID);
+    const survey = await Survey.findById(surveyID).populate({
+      path: 'totalQues',
+      select: 'questionText options', // Specify the fields you want to populate
+    });
 
     if (!survey) {
       return res.status(404).json({ message: 'Survey not found' });
@@ -57,17 +60,12 @@ router.post('/api/update-survey/:surveyID', verifyToken, async (req, res) => {
     const user = await DFrameUser.findOne({ publicAddress });
 
     if (!user) {
-      console.log('ERROR HERE', publicAddress);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const today = new Date().toLocaleDateString('en-GB');
+    const today = new Date().toLocaleDateString('en-GB').toString();
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Find the survey with the given surveyId for today in the user's userSurvey array
+    // ...
     const surveyToUpdate = user.userSurvey.find(
       (survey) =>
         survey.date === today &&
@@ -99,14 +97,16 @@ router.post('/api/update-survey/:surveyID', verifyToken, async (req, res) => {
     ) {
       user.rewards.daily.push({
         date: today,
-        status: 'unpaid',
+        status: 'UNPAID',
         browserData: [],
         ad: [],
         survey: [],
         referral: [],
       });
     }
-
+    // if (!user.rewards.daily.survey) {
+    //   user.rewards.daily.survey = [];
+    // }
     // Generate new refId for each category
     const newRefId = new mongoose.Types.ObjectId();
 
@@ -199,6 +199,38 @@ router.post(
     }
   }
 );
+
+router.get('/api/reward/:publicAddress', async (req, res) => {
+  try {
+    const { publicAddress } = req.params;
+
+    // Find the user based on publicAddress
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Extract all surveys with status 'SEEN' from user object
+    const seenSurveys = user.userSurvey.flatMap((entry) =>
+      entry.surveys.filter((survey) => survey.status === 'SEEN')
+    );
+
+    // Calculate the length of seen surveys
+    const surveysLength = seenSurveys.length;
+
+    // Calculate the total sum of rewards for seen surveys
+    const totalRewards = seenSurveys.reduce(
+      (sum, survey) => sum + survey.rewards,
+      0
+    );
+
+    return res.json({ surveysLength, totalRewards });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 const SurveyRouter = router;
 module.exports = SurveyRouter;

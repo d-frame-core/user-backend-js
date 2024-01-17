@@ -10,6 +10,8 @@ const fs = require('fs');
 const multer = require('multer');
 const { Storage } = require('@google-cloud/storage');
 const { WebsiteData } = require('../models/websites.model');
+const { AdModel } = require('../models/ad.models');
+const Survey = require('../models/survey.model');
 const storageClient = new Storage({
   keyFilename: path.join(__dirname, '..', '..', 'key.json'),
   projectId: 'user-backend-402016',
@@ -71,36 +73,105 @@ async function deleteUserByPublicAddress(req, res) {
   }
 }
 
+// async function getLatestAd(req, res) {
+//   const publicAddress = req.params.publicAddress;
+
+//   try {
+//     const user = await DFrameUser.findOne({ publicAddress });
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const latestAd = user.userAds[0].ads
+//       .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
+//       .reduce((latest, ad) => {
+//         if (latest === null || ad.date > latest.date) {
+//           return ad;
+//         }
+//         return latest;
+//       }, null);
+
+//     if (latestAd) {
+//       return res.status(200).json({ latestAdId: latestAd.adsId });
+//     } else {
+//       return res.status(404).json({ message: 'No unseen ads found' });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: 'Internal Server Error' });
+//   }
+// }
+
 async function getLatestAd(req, res) {
-  const publicAddress = req.params.publicAddress;
-
-  try {
-    const user = await DFrameUser.findOne({ publicAddress });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const latestAd = user.userAds[0].ads
-      .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
-      .reduce((latest, ad) => {
-        if (latest === null || ad.date > latest.date) {
-          return ad;
-        }
-        return latest;
-      }, null);
-
-    if (latestAd) {
-      return res.status(200).json({ latestAdId: latestAd.adsId });
-    } else {
-      return res.status(404).json({ message: 'No unseen ads found' });
-    }
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Internal Server Error' });
-  }
+  // const publicAddress = req.params.publicAddress;
+  // try {
+  //   const user = await DFrameUser.findOne({ publicAddress });
+  //   if (!user) {
+  //     return res.status(404).json({ message: 'User not found' });
+  //   }
+  //   const latestAd = user.userAds[0].ads
+  //     .filter((ad) => ad.status.toUpperCase() === 'UNSEEN')
+  //     .map(async (ad) => {
+  //       const adDetails = await AdModel.findOne({
+  //         _id: ad.adsId,
+  //         status: 'VERIFIED',
+  //       });
+  //       return adDetails ? { ...ad, date: adDetails.date } : null;
+  //     })
+  //     .reduce((latest, ad) => {
+  //       if (ad !== null && (latest === null || ad.date > latest.date)) {
+  //         return ad;
+  //       }
+  //       return latest;
+  //     }, null);
+  //   if (latestAd) {
+  //     return res.status(200).json({ latestAdId: latestAd.adsId });
+  //   } else {
+  //     return res
+  //       .status(404)
+  //       .send(null)
+  //   }
+  // } catch (error) {
+  //   console.error(error);
+  //   return res.status(500).json({ message: 'Internal Server Error' });
+  // }
 }
 
+// async function getUnseenSurveys(req, res) {
+//   try {
+//     const publicAddress = req.params.publicAddress;
+
+//     const today = new Date().toLocaleDateString('en-GB');
+//     const user = await DFrameUser.findOne({ publicAddress });
+
+//     if (!user) {
+//       return res.json(null); // If user not found, return null
+//     }
+
+//     // Filter user's surveys for today that have status 'UNSEEN'
+//     const todaysSurveys = user.userSurvey.find(
+//       (survey) => survey.date === today
+//     );
+
+//     if (!todaysSurveys) {
+//       return res.json([]); // If no surveys found for today, return an empty array
+//     }
+
+//     // Filter surveys with 'UNSEEN' status from today's surveys
+//     const unseenSurveys = todaysSurveys.surveys
+//       .filter((survey) => survey.status === 'UNSEEN')
+//       .map((survey) => survey.surveyId);
+
+//     if (unseenSurveys.length === 0) {
+//       return res.json(null); // If no unseen surveys found, return null
+//     }
+
+//     return res.json(unseenSurveys);
+//   } catch (error) {
+//     return res.status(500).json({ error: 'Server error' });
+//   }
+// }
 async function getUnseenSurveys(req, res) {
   try {
     const publicAddress = req.params.publicAddress;
@@ -121,17 +192,122 @@ async function getUnseenSurveys(req, res) {
       return res.json([]); // If no surveys found for today, return an empty array
     }
 
-    // Filter surveys with 'UNSEEN' status from today's surveys
-    const unseenSurveys = todaysSurveys.surveys
-      .filter((survey) => survey.status === 'UNSEEN')
-      .map((survey) => survey.surveyId);
+    // Fetch survey details for 'UNSEEN' surveys with 'VERIFIED' statusCampaign
+    const unseenSurveys = await Promise.all(
+      todaysSurveys.surveys
+        .filter((survey) => survey.status === 'UNSEEN')
+        .map(async (survey) => {
+          const surveyDetails = await Survey.findOne({
+            _id: survey.surveyId,
+            statusCampaign: 'VERIFIED',
+          });
+          console.log(surveyDetails);
+          return surveyDetails ? surveyDetails._id : null;
+        })
+    );
 
-    if (unseenSurveys.length === 0) {
-      return res.json(null); // If no unseen surveys found, return null
+    // Remove null values from the array (surveys without 'VERIFIED' statusCampaign)
+    const filteredUnseenSurveys = unseenSurveys.filter(
+      (survey) => survey !== null
+    );
+
+    if (filteredUnseenSurveys.length === 0) {
+      return res.json(null); // If no unseen surveys with 'VERIFIED' statusCampaign found, return null
     }
 
-    return res.json(unseenSurveys);
+    return res.json(filteredUnseenSurveys);
   } catch (error) {
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// async function getUnseenAdIds(req, res) {
+//   try {
+//     const publicAddress = req.params.publicAddress;
+
+//     const today = new Date().toLocaleDateString('en-GB');
+//     const user = await DFrameUser.findOne({ publicAddress });
+
+//     if (!user) {
+//       return res.json(null); // If user not found, return null
+//     }
+
+//     // Filter user's surveys for today that have status 'UNSEEN'
+//     const todaysAds = user.userAds.find((ad) => ad.date === today);
+
+//     if (!todaysAds) {
+//       return res.json([]); // If no surveys found for today, return an empty array
+//     }
+
+//     // Fetch survey details for 'UNSEEN' surveys with 'VERIFIED' statusCampaign
+//     const unseenAds = await Promise.all(
+//       todaysAds.ads
+//         .filter((ad) => ad.status === 'UNSEEN')
+//         .map(async (ad) => {
+//           const adDetails = await AdModel.findOne({
+//             _id: ad.adsId,
+//             status: 'VERIFIED',
+//           });
+//           return adDetails ? adDetails._id : null;
+//         })
+//     );
+
+//     // Remove null values from the array (surveys without 'VERIFIED' statusCampaign)
+//     const filteredUnseenAds = unseenAds.filter((ad) => ad !== null);
+
+//     if (filteredUnseenAds.length === 0) {
+//       return res.json(null); // If no unseen surveys with 'VERIFIED' statusCampaign found, return null
+//     }
+
+//     return res.json(filteredUnseenAds);
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ error: 'Server error' });
+//   }
+// }
+async function getUnseenAdIds(req, res) {
+  try {
+    const publicAddress = req.params.publicAddress;
+
+    const today = new Date().toLocaleDateString('en-GB');
+    const user = await DFrameUser.findOne({ publicAddress });
+
+    if (!user) {
+      return res.json({ latestAdId: null }); // If user not found, return null
+    }
+
+    // Filter user's surveys for today that have status 'UNSEEN'
+    const todaysAds = user.userAds.find((ad) => ad.date === today);
+
+    if (!todaysAds) {
+      return res.json({ latestAdId: null }); // If no surveys found for today, return null
+    }
+
+    // Fetch survey details for 'UNSEEN' surveys with 'VERIFIED' statusCampaign
+    const unseenAds = await Promise.all(
+      todaysAds.ads
+        .filter((ad) => ad.status === 'UNSEEN')
+        .map(async (ad) => {
+          const adDetails = await AdModel.findOne({
+            _id: ad.adsId,
+            status: 'VERIFIED',
+          });
+          return adDetails ? adDetails._id : null;
+        })
+    );
+
+    // Remove null values from the array (surveys without 'VERIFIED' statusCampaign)
+    const filteredUnseenAds = unseenAds.filter((ad) => ad !== null);
+
+    if (filteredUnseenAds.length === 0) {
+      return res.json({ latestAdId: null }); // If no unseen surveys with 'VERIFIED' statusCampaign found, return null
+    }
+
+    const latestAdId = filteredUnseenAds[filteredUnseenAds.length - 1];
+
+    return res.json({ latestAdId });
+  } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: 'Server error' });
   }
 }
@@ -303,4 +479,5 @@ module.exports = {
   uploadProfileImage,
   updateReferralCode,
   getTopVisitedSitesForPast7Days,
+  getUnseenAdIds,
 };

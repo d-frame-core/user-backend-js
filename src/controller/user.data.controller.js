@@ -7,7 +7,7 @@ require('dotenv').config();
 const ipfsAPI = require('ipfs-api');
 const crypto = require('crypto');
 const { WebsiteData } = require('../models/websites.model');
-const ipfs = ipfsAPI('127.0.0.1', '5001');
+const ipfs = ipfsAPI('34.131.52.220', '5001', { protocol: 'http' });
 const IV = '5183666c72eec9e4';
 
 async function getTopVisitedSites(req, res) {

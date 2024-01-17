@@ -56,15 +56,15 @@ const surveySchema = new mongoose.Schema({
   },
   statusCampaign: {
     type: String,
-    default: 'unverified', //verified,unverified,stop,completed
+    default: 'UNVERIFIED', //verified,unverified,stop,completed
   },
   startDate: {
-    type: Date,
-    required: true,
+    type: String,
+    // required: true,
   },
   endDate: {
-    type: Date,
-    required: true,
+    type: String,
+    // required: true,
   },
 });
 

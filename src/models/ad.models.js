@@ -15,6 +15,7 @@ const adSchema = new Schema({
   socialMediaPages: {},
   startDate: String,
   startTime: String,
+  adUrl: String,
   endDate: String,
   endTime: String,
   audience: {
@@ -34,7 +35,7 @@ const adSchema = new Schema({
   bidAmount: Number,
   status: {
     type: String,
-    default: 'unverified',
+    default: 'UNVERIFIED',
   },
 });
 const AdModel = model('Ad', adSchema);

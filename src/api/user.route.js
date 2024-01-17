@@ -24,6 +24,7 @@ const {
   updateWebsites,
   getTop3URLsForPast7Days,
   getTopVisitedSitesForPast7Days,
+  getUnseenAdIds,
 } = require('../controller/user.controller');
 const {
   updateKYC1Details,
@@ -47,7 +48,7 @@ const { updateAdStatus } = require('../controller/ad.controller');
 const { WebsiteData } = require('../models/websites.model');
 
 const router = express.Router();
-const ipfs = ipfsAPI('34.131.52.220', '8080');
+const ipfs = ipfsAPI('34.131.52.220', '5001', { protocol: 'http' });
 const IV = '5183666c72eec9e4';
 
 const storage = multer.memoryStorage();
@@ -168,7 +169,6 @@ router.patch(
 
 // POST /api/user-data/:publicAddress
 router.post('/api/user-data/:publicAddress', async (req, res) => {
-  console.log('ENTERED the user-data POST route');
   const { publicAddress } = req.params;
   const dataEntries = req.body.tabData; // Array of data entries
 
@@ -280,6 +280,9 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
        * NEW SOLUTION
        */
       console.log('ENTERED ELSE');
+      if (dataEntries.length < 1) {
+        return res.status(200).send('No data entries found');
+      }
       const key = crypto
         .createHash('sha256')
         .update(req.params.publicAddress)
@@ -298,14 +301,20 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
         );
         const parsedTimeSpent = parseFloat(time_on_site);
         modifiedDataArray.push({ urlLink, localeTimeString, parsedTimeSpent });
+        console.log('Entry is', entry);
       }
 
       const preDataBuffer = Buffer.from(JSON.stringify(modifiedDataArray));
+
       let encryptedData = cipher.update(preDataBuffer, 'utf8', 'base64');
+
       encryptedData += cipher.final('base64');
       const dataBuffer = Buffer.from(JSON.stringify(encryptedData));
+      console.log('dataBuffer is', dataBuffer);
       const result = await ipfs.files.add(dataBuffer);
+
       const hash = result[0].hash;
+
       console.log('cid is created for this', hash);
       const existingUserData = user.userData.find(
         (data) => data.dataDate === currentDate
@@ -393,7 +402,9 @@ router.post('/api/user-data/:publicAddress', async (req, res) => {
         referral: [],
       });
     }
-
+    // if (!user.rewards.daily.browserData) {
+    //   user.rewards.daily.browserData = [];
+    // }
     // Generate new refId for each category
     const newRefId = new mongoose.Types.ObjectId();
 
@@ -469,15 +480,11 @@ router.get(
 // GET /api/user-data/tags/:publicAddress
 router.get('/api/user-data/tags/:publicAddress', getUserDataByTags);
 
-router.get('/api/user/get-latest-ad/:publicAddress', getLatestAd);
+router.get('/api/user/get-latest-ad/:publicAddress', getUnseenAdIds);
 
 router.post('/api/update-ad-status/:publicAddress/:adId', updateAdStatus);
 
-router.get(
-  '/api/get-unseen-surveys/:publicAddress',
-  verifyToken,
-  getUnseenSurveys
-);
+router.get('/api/get-unseen-survey-ids/:publicAddress', getUnseenSurveys);
 
 router.get('/api/user/st/:publicAddress', getSitesByTags);
 router.post(
