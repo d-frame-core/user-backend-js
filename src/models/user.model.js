@@ -30,7 +30,6 @@ const rewardsEntryWithRefId = [
 const dFrameUserSchema = new mongoose.Schema(
   {
     publicAddress: { type: String, required: true, unique: true },
-
     referralCode: { type: String, default: '' },
     kyc1: {
       status: {

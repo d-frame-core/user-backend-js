@@ -468,7 +468,7 @@ router.get(
   '/api/user-data/top-sites/:publicAddress',
   verifyToken,
   getTopVisitedSites
-);
+); 
 
 // GET /api/user-data/top-times/:publicAddress
 router.get(
